@@ -14,8 +14,25 @@ const SetContainer = React.createClass({
   },
 
   render() {
-    return <SetView board={this.props.board} />;
+    return <SetView
+      board={this.props.board}
+      selected={this.props.selected}
+      onSelect={this.onSelect}
+      onSubmit={this.onSubmit} />;
+  },
+
+  onSelect(id, selected) {
+    if (selected) {
+      this.props.dispatch({type: "CARD_SELECTED", cardId: id});
+    } else {
+      this.props.dispatch({type: "CARD_DESELECTED", cardId: id});
+    }
+  },
+
+  onSubmit() {
+    this.props.dispatch({type: "SUBMIT_SET", cards: this.props.selected});
   }
+
 });
 
 
