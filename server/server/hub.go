@@ -6,6 +6,7 @@ package main
 
 import (
 	"log"
+    "encoding/json"
 )
 
 // hub maintains the set of active connections and broadcasts messages to the
@@ -42,14 +43,12 @@ var hubSingleton = hub{
 
 // Request represents a message coming from the client
 type Request struct {
-	ClientID string
 	Type string
-	Payload string // todo not string
 }
 
 // Deserialize unmarshals a byte array into a Request object
 func Deserialize(input []byte) (*Request, error) {
-	var message = &Message{}
+	var message = &Request{}
 	err := json.Unmarshal(input, message)
 	return message, err
 }
@@ -73,9 +72,9 @@ func (h *hub) run() {
 		case broadcaseMsg := <-h.broadcast:
             log.Println("Got a boardcast message " + broadcaseMsg)
         	incomingConnection := broadcaseMsg.connection
-            payload := conMessage.message
-            message, err := types.Deserialize(payload)
-
+            log.Println("incomingConnection " + incomingConnection)
+            message := broadcaseMsg.message
+            request, err := types.Deserialize(payload)
 			if err != nil {
 				log.Println("Error deserializing: ", err)
 				continue

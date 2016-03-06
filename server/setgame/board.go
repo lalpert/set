@@ -3,6 +3,26 @@ package setgame
 // Board is the list of cards currently on the board.
 type Board []Card
 
+func (board Board) getCardsByID(cardIds []int) []Card {
+    cards := []Card{}
+    for _, cardID := range cardIds {
+        foundCard := board.getCardByID(cardID) 
+        if foundCard != nil {
+            cards = append(cards, *foundCard)
+        }
+    }
+    return cards
+}
+
+func (board Board) getCardByID(id int) *Card {
+    for  _, boardCard := range board  {
+        if boardCard.id == id {
+            return &boardCard;
+        }
+    }
+    return nil;
+}
+
 func (board Board) containsCards(cards []Card) bool {
     for  _, card := range board  {
         if !board.containsCard(card) {
@@ -14,7 +34,7 @@ func (board Board) containsCards(cards []Card) bool {
 
 func (board Board) containsCard(card Card) bool {
     for  _, boardCard := range board  {
-        if boardCard == card {
+        if boardCard == card { // not gonna work because of equality check/id error
             return true;
         }
     }
@@ -29,7 +49,7 @@ func (board Board) replace(oldCards []Card, newCards []Card)  {
 
 func (board Board) replaceCard(oldCard Card, newCard Card) {
      for  i, boardCard := range board  {
-        if boardCard == oldCard {
+        if boardCard == oldCard { 
             board[i] = newCard
             return
         }

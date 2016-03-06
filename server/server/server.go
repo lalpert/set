@@ -2,9 +2,6 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"log"
-	"net/http"
-	"time"
 )
 
 // connection is an middleman between the websocket connection and the hub.
