@@ -90,7 +90,7 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
-	conn.ws.WriteJSON(err)
+	conn.ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 }
 
 func (api *API) sendBoardState(conn *connection) {
