@@ -18,7 +18,11 @@ MESSAGES = [
 },
 {
 	"type": "SET_BOARD",
- 	"board": []
+ 	"board": [
+	  {"id": 2, "shape": "oval", "fill": "empty", "number": 3, "color": "purple" },
+	  {"id": 5, "shape": "oval", "fill": "empty", "number": 3, "color": "purple" },
+	  {"id": 6, "shape": "oval", "fill": "empty", "number": 3, "color": "purple" },
+	]
 }
 ]
 class SimpleEcho(WebSocket):

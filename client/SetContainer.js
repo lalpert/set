@@ -10,7 +10,8 @@ import SetView from './SetView'
 
 const SetContainer = React.createClass({
   propTypes: {
-    board: React.PropTypes.array
+    board: React.PropTypes.array,
+    server: React.PropTypes.object.isRequired
   },
 
   render() {
@@ -30,7 +31,9 @@ const SetContainer = React.createClass({
   },
 
   onSubmit() {
-    this.props.dispatch({type: "SUBMIT_SET", cards: this.props.selected});
+    const event = {type: "CLAIM_SET", cards: this.props.selected};
+    this.props.server.send(event);
+    this.props.dispatch(event);
   }
 
 });
