@@ -90,11 +90,16 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
-	conn.ws.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+	response := errorResponse{"error", err.Error()}
+	sendResponse(conn, response)
 }
 
 func (api *API) sendBoardState(conn *connection) {
 	response := boardResponse{"board", api.game.GetBoard()}
+	sendResponse(conn, response)
+}
+
+func sendResponse(conn *connection, response interface{}) {
 	stringResponse, _ := json.Marshal(response)
 	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
 }
@@ -102,4 +107,9 @@ func (api *API) sendBoardState(conn *connection) {
 type boardResponse struct {
 	MsgType   string        `json:"type"`
 	GameBoard setgame.Board `json:"board"`
+}
+
+type errorResponse struct {
+	MsgType  string `json:"type"`
+	ErrorMsg string `json:"error"`
 }
