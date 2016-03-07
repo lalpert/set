@@ -56,12 +56,12 @@ func  (api *API) reregisterPlayer(incomingConnection, message) {
 */
 
 type submitSetMessage struct {
-	cards []int // list of card ids
+	Cards []int `json:"cards"` // list of card ids
 }
 
 func (api *API) claimSet(conn *connection, request submitSetMessage) error {
 	player := api.game.Players[10101] //getPlayerByConnection(conn, game.Players)
-	_, err := api.game.ClaimSetByIds(player, request.cards)
+	_, err := api.game.ClaimSetByIds(player, request.Cards)
 	return err // for now, no return value
 }
 
@@ -90,12 +90,12 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
-	response := errorResponse{"error", err.Error()}
+	response := errorResponse{"ERROR", err.Error()}
 	sendResponse(conn, response)
 }
 
 func (api *API) sendBoardState(conn *connection) {
-	response := boardResponse{"board", api.game.GetBoard()}
+	response := boardResponse{"SET_BOARD", api.game.GetBoard()}
 	sendResponse(conn, response)
 }
 
