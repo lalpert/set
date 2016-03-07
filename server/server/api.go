@@ -103,7 +103,7 @@ func (api *API) respondWithType(conn *connection, typeString string) {
 }
 
 func (api *API) sendBoardState(conn *connection) {
-	response := boardResponse{"SET_BOARD", api.game.GetBoard()}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
 	sendResponse(conn, response)
 }
 
@@ -113,8 +113,8 @@ func sendResponse(conn *connection, response interface{}) {
 }
 
 type boardResponse struct {
-	MsgType   string        `json:"type"`
-	GameBoard setgame.Board `json:"board"`
+	MsgType   string         `json:"type"`
+	GameBoard []setgame.Card `json:"board"`
 }
 
 type errorResponse struct {
