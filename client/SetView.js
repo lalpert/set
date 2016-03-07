@@ -114,7 +114,8 @@ const SetCard = React.createClass({
   selectedStyle() {
     if (this.props.selected) {
       return {
-        borderColor: 'blue'
+        borderColor: 'blue',
+        backgroundColor: '#cceeff'
       }
     }
   },
@@ -156,12 +157,10 @@ const SetCard = React.createClass({
   }
 });
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    //justifyContent: 'center',
     backgroundColor: '#F5FCFF',
   },
 
