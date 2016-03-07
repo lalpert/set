@@ -61,7 +61,7 @@ type submitSetMessage struct {
 
 func (api *API) claimSet(conn *connection, request submitSetMessage) error {
 	player := api.game.Players[10101] //getPlayerByConnection(conn, game.Players)
-	_, err := api.game.ClaimSetByIds(player, request.Cards)
+	err := api.game.ClaimSetByIds(player, request.Cards)
 	return err // for now, no return value
 }
 
@@ -86,11 +86,19 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 			api.respondWithError(conn, err)
 		}
 		api.sendBoardState(conn)
+		if api.game.GameOver() {
+			api.respondWithType(conn, "GAME_OVER")
+		}
 	}
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
 	response := errorResponse{"ERROR", err.Error()}
+	sendResponse(conn, response)
+}
+
+func (api *API) respondWithType(conn *connection, typeString string) {
+	response := typeResponse{typeString}
 	sendResponse(conn, response)
 }
 
@@ -112,4 +120,8 @@ type boardResponse struct {
 type errorResponse struct {
 	MsgType  string `json:"type"`
 	ErrorMsg string `json:"error"`
+}
+
+type typeResponse struct {
+	MsgType string `json:"type"`
 }
