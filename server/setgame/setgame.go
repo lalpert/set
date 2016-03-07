@@ -49,7 +49,7 @@ func NewGame() *Game {
 	players[10101] = player1
 
 	deck := createShuffledDeck()
-	board := deck.deal(12)
+	board := Board{deck.deal(12)}
 	game := &Game{players, deck, board}
 	game.addCardsIfNoSet()
 	return game
@@ -68,29 +68,36 @@ func (g *Game) addNewPlayer(name string) Player{
 
 // ClaimSetByIds takes a Player and a list of card IDs, checks if those cards make a valid set,
 // and if so replaces them with new cards
-func (g *Game) ClaimSetByIds(player Player, cardIDs []int) ([]Card, error) {
+func (g *Game) ClaimSetByIds(player Player, cardIDs []int) error {
 
 	if len(cardIDs) != 3 {
-		return nil, errors.New("Set must contain 3 cards")
+		return errors.New("Set must contain 3 cards")
 	}
 
 	setCards := g.board.getCardsByID(cardIDs)
 	if len(setCards) != 3 {
-		return nil, errors.New("Not all cards are on board")
+		return errors.New("Not all cards are on board")
 	}
 
 	if !isSet(setCards[0], setCards[1], setCards[2]) {
-		return nil, errors.New("Not a set")
+		return errors.New("Not a set")
 	}
 
 	// If we get here, cards are on board and they are a set!
 	player.score++
-	newCards := g.deck.deal(3) // todo what if we're out of cards
-	g.board.replace(setCards, newCards)
+
+	if len(g.board.cards) > 12 || len(g.deck.cards) == 0 {
+		// If we can't or don't want to deal new cards, just remove set cards
+		g.board.remove(setCards)
+	} else {
+		// Else deal new cards to replace old ones
+		g.board.replace(setCards, g.deck.deal(3))
+	}
+
 	g.addCardsIfNoSet()
 
 	//return cards, Player.score
-	return setCards, nil
+	return nil
 
 }
 
@@ -100,8 +107,18 @@ func (g *Game) GetBoard() Board {
 }
 
 // addCardsIfNoSet adds cards to the board in sets of 3 until the board contains a set
-func (g *Game) addCardsIfNoSet() {
+// Returns whether it was able to do so
+func (g *Game) addCardsIfNoSet() bool {
 	for !g.board.ContainsSet() {
-		g.board = append(g.board, g.deck.deal(3)...)
+		if len(g.deck.cards) == 0 {
+			return false
+		}
+		g.board.cards = append(g.board.cards, g.deck.deal(3)...)
 	}
+	return true
+}
+
+// GameOver returns whether the game is over
+func (g *Game) GameOver() bool {
+	return !g.board.ContainsSet()
 }

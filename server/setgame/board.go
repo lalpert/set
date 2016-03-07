@@ -1,7 +1,9 @@
 package setgame
 import "log"
 // Board is the list of cards currently on the board.
-type Board []Card
+type Board struct {
+	cards []Card
+}
 
 func (board Board) getCardsByID(cardIds []int) []Card {
 	cards := []Card{}
@@ -14,8 +16,8 @@ func (board Board) getCardsByID(cardIds []int) []Card {
 	return cards
 }
 
-func (board Board) getCardByID(id int) *Card {
-	for _, boardCard := range board {
+func (board *Board) getCardByID(id int) *Card {
+	for _, boardCard := range board.cards {
 		if boardCard.ID == id {
 			return &boardCard
 		}
@@ -23,45 +25,44 @@ func (board Board) getCardByID(id int) *Card {
 	return nil
 }
 
-func (board Board) containsCards(cards []Card) bool {
-	for _, card := range board {
-		if !board.containsCard(card) {
-			return false
-		}
-	}
-	return true
-}
-
-func (board Board) containsCard(card Card) bool {
-	for _, boardCard := range board {
-		if boardCard == card { // not gonna work because of equality check/id error
-			return true
-		}
-	}
-	return false
-}
-
-func (board Board) replace(oldCards []Card, newCards []Card) {
+func (board *Board) replace(oldCards []Card, newCards []Card) {
 	for i, oldCard := range oldCards {
 		board.replaceCard(oldCard, newCards[i])
 	}
 }
 
-func (board Board) replaceCard(oldCard Card, newCard Card) {
-	for i, boardCard := range board {
+func (board *Board) replaceCard(oldCard Card, newCard Card) {
+	for i, boardCard := range board.cards {
 		if boardCard == oldCard {
-			board[i] = newCard
+			board.cards[i] = newCard
+			return
+		}
+	}
+}
+
+func (board *Board) remove(oldCards []Card) {
+	for _, oldCard := range oldCards {
+		board.removeCard(oldCard)
+	}
+}
+
+func (board *Board) removeCard(oldCard Card) {
+	cards := board.cards
+	for i, boardCard := range cards {
+		if boardCard == oldCard {
+			board.cards = append(cards[:i], cards[i+1:]...)
 			return
 		}
 	}
 }
 
 // ContainsSet returns whether there is at least one set on the board
-func (board Board) ContainsSet() bool {
-	for i := 0; i < len(board); i++ {
-		for j := i + 1; j < len(board); j++ {
-			for k := j + 1; k < len(board); k++ {
-				if isSet(board[i], board[j], board[k]) {
+func (board *Board) ContainsSet() bool {
+	cards := board.cards
+	for i := 0; i < len(cards); i++ {
+		for j := i + 1; j < len(cards); j++ {
+			for k := j + 1; k < len(cards); k++ {
+				if isSet(cards[i], cards[j], cards[k]) {
 					log.Println(board[i], board[j], board[k]);
 					return true
 				}
