@@ -7,9 +7,9 @@ var numbers = []int{1, 2, 3}
 
 // Card represents a Set card
 type Card struct {
-	color string
-	shape string
-    fill string
-    number int
-    id int
+	Color  string
+	Shape  string
+	Fill   string
+	Number int
+	Id     int
 }
