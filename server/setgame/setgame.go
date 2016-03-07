@@ -90,3 +90,8 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) ([]Card, error) {
 	return setCards, nil
 
 }
+
+// GetBoard returns the game board
+func (g *Game) GetBoard() Board {
+	return g.board
+}

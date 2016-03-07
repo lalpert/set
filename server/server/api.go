@@ -11,11 +11,11 @@ import (
 // Options for message types
 const (
 	// Declare that you are a new player joining the game
-	NewPlayer = "newPlayer"
+	JoinGame = "JOIN_GAME"
 	// Declare that you are a previous player coming back
-	ReregisterPlayer = "ReregisterPlayer"
+	RejoinGame = "REJOIN_GAME"
 	// Declare that you have found a set with the given cards
-	ClaimSet = "ClaimSet"
+	ClaimSet = "CLAIM_SET"
 	// Ask for 3 more cards to be dealt
 	DealMore = "DealMore"
 )
@@ -68,6 +68,8 @@ func (api *API) unregisterConnection(conn *connection) {
 
 func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 	switch request.Type {
+	case JoinGame:
+		api.sendBoardState(conn)
 	case ClaimSet:
 		claimSetRequest := &submitSetMessage{}
 		err := json.Unmarshal(message, claimSetRequest)
@@ -79,10 +81,14 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 		if err != nil {
 			api.respondWithError(conn, err)
 		}
-		//api.sendNewBoardState()
+		api.sendBoardState(conn)
 	}
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
 	conn.ws.WriteJSON(err)
+}
+
+func (api *API) sendBoardState(conn *connection) {
+	conn.ws.WriteJSON(api.game.GetBoard())
 }
