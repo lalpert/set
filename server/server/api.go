@@ -100,6 +100,6 @@ func (api *API) sendBoardState(conn *connection) {
 }
 
 type boardResponse struct {
-	MsgType   string        `json: "type"`
-	GameBoard setgame.Board `json: "board"`
+	MsgType   string        `json:"type"`
+	GameBoard setgame.Board `json:"board"`
 }
