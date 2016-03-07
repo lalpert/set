@@ -5,6 +5,7 @@ import (
 
 	"log"
 
+	"github.com/gorilla/websocket"
 	"github.com/lalpert/set/server/setgame"
 )
 
@@ -94,7 +95,8 @@ func (api *API) respondWithError(conn *connection, err error) {
 
 func (api *API) sendBoardState(conn *connection) {
 	response := boardResponse{"board", api.game.GetBoard()}
-	conn.ws.WriteJSON(response)
+	stringResponse, _ := json.Marshal(response)
+	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
 }
 
 type boardResponse struct {
