@@ -49,7 +49,7 @@ func NewGame() *Game {
 	players[10101] = player1
 
 	deck := createShuffledDeck()
-	board := deck.deal(12)
+	board := Board{deck.deal(12)}
 	game := &Game{players, deck, board}
 	game.addCardsIfNoSet()
 	return game
@@ -85,8 +85,16 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) ([]Card, error) {
 
 	// If we get here, cards are on board and they are a set!
 	player.score++
-	newCards := g.deck.deal(3) // todo what if we're out of cards
-	g.board.replace(setCards, newCards)
+
+	if (len(g.board.cards)) <= 12 {
+		// If <= 12 cards, deal new cards to replace old ones
+		newCards := g.deck.deal(3) // todo what if we're out of cards
+		g.board.replace(setCards, newCards)
+	} else {
+		// Otherwise, just remove the cards in the set
+		g.board.remove(setCards)
+	}
+
 	g.addCardsIfNoSet()
 
 	//return cards, Player.score
@@ -102,6 +110,6 @@ func (g *Game) GetBoard() Board {
 // addCardsIfNoSet adds cards to the board in sets of 3 until the board contains a set
 func (g *Game) addCardsIfNoSet() {
 	for !g.board.ContainsSet() {
-		g.board = append(g.board, g.deck.deal(3)...)
+		g.board.cards = append(g.board.cards, g.deck.deal(3)...)
 	}
 }
