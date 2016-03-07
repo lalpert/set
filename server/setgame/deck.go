@@ -28,7 +28,7 @@ func createShuffledDeck() Deck {
 }
 
 //shuffle shuffles the cards in the deck
-func (d Deck) shuffle() {
+func (d *Deck) shuffle() {
 	deck := d.cards
 	for i := 1; i < len(deck); i++ {
 		r := rand.Intn(i + 1)
@@ -39,14 +39,14 @@ func (d Deck) shuffle() {
 }
 
 // Pops a card from the deck and returns the card
-func (d Deck) getNextCard() Card {
+func (d *Deck) getNextCard() Card {
 	deck := d.cards
 	nextCard, newDeck := deck[len(deck)-1], deck[:len(deck)-1]
 	d.cards = newDeck
 	return nextCard
 }
 
-func (d Deck) deal(numCards int) []Card {
+func (d *Deck) deal(numCards int) []Card {
 	newCards := []Card{}
 	for i := 0; i < numCards; i++ {
 		nextCard := d.getNextCard()
