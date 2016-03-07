@@ -94,12 +94,12 @@ func (api *API) respondWithError(conn *connection, err error) {
 }
 
 func (api *API) sendBoardState(conn *connection) {
-	response := boardResponse{"board", api.game.GetBoard()}
+	response := boardResponse{"SET_BOARD", api.game.GetBoard()}
 	stringResponse, _ := json.Marshal(response)
 	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
 }
 
 type boardResponse struct {
-	MsgType   string        `json: "type"`
-	GameBoard setgame.Board `json: "board"`
+	MsgType   string        `json:"type"`
+	GameBoard setgame.Board `json:"board"`
 }
