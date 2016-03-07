@@ -1,8 +1,8 @@
 package setgame
 
-var colors = []string{"RED", "PURPLE", "GREEN"}
-var shapes = []string{"OVAL", "SQUIGGLE", "DIAMOND"}
-var fills = []string{"SOLID", "STRIPED", "EMPTY"}
+var colors = []string{"red", "purple", "green"}
+var shapes = []string{"oval", "squiggle", "diamond"}
+var fills = []string{"solid", "striped", "empty"}
 var numbers = []int{1, 2, 3}
 
 // Card represents a Set card
