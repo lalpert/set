@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lalpert/set/server/setgame"
+	"log"
 )
 
 // This class is the one that knows about both the game and the hub
@@ -67,6 +68,7 @@ func (api *API) unregisterConnection(conn *connection) {
 }
 
 func (api *API) handleMsg(conn *connection, request Request, message []byte) {
+	log.Println("Got message: ", request);
 	switch request.Type {
 	case JoinGame:
 		api.sendBoardState(conn)

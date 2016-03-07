@@ -70,16 +70,16 @@ func (h *hub) run() {
 			}
 
 		case broadcaseMsg := <-h.broadcast:
-			log.Println("Got a boardcast message ")
+		
 			incomingConnection := broadcaseMsg.connection
 			log.Println("incomingConnection ")
 			message := broadcaseMsg.message
+			log.Println("Got a broadcast message", string(message));
 			request, err := Deserialize(message)
 			if err != nil {
 				log.Println("Error deserializing: ", err)
 				continue
 			}
-			log.Println(message)
 			api.handleMsg(incomingConnection, *request, message)
 
 		}
