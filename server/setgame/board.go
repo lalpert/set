@@ -4,56 +4,54 @@ package setgame
 type Board []Card
 
 func (board Board) getCardsByID(cardIds []int) []Card {
-    cards := []Card{}
-    for _, cardID := range cardIds {
-        foundCard := board.getCardByID(cardID) 
-        if foundCard != nil {
-            cards = append(cards, *foundCard)
-        }
-    }
-    return cards
+	cards := []Card{}
+	for _, cardID := range cardIds {
+		foundCard := board.getCardByID(cardID)
+		if foundCard != nil {
+			cards = append(cards, *foundCard)
+		}
+	}
+	return cards
 }
 
 func (board Board) getCardByID(id int) *Card {
-    for  _, boardCard := range board  {
-        if boardCard.id == id {
-            return &boardCard;
-        }
-    }
-    return nil;
+	for _, boardCard := range board {
+		if boardCard.ID == id {
+			return &boardCard
+		}
+	}
+	return nil
 }
 
 func (board Board) containsCards(cards []Card) bool {
-    for  _, card := range board  {
-        if !board.containsCard(card) {
-            return false;
-        }
-    }
-    return true
+	for _, card := range board {
+		if !board.containsCard(card) {
+			return false
+		}
+	}
+	return true
 }
 
 func (board Board) containsCard(card Card) bool {
-    for  _, boardCard := range board  {
-        if boardCard == card { // not gonna work because of equality check/id error
-            return true;
-        }
-    }
-    return false;
+	for _, boardCard := range board {
+		if boardCard == card { // not gonna work because of equality check/id error
+			return true
+		}
+	}
+	return false
 }
 
-func (board Board) replace(oldCards []Card, newCards []Card)  {
-    for i, oldCard := range oldCards {
-        board.replaceCard(oldCard, newCards[i])
-    }
-}   
+func (board Board) replace(oldCards []Card, newCards []Card) {
+	for i, oldCard := range oldCards {
+		board.replaceCard(oldCard, newCards[i])
+	}
+}
 
 func (board Board) replaceCard(oldCard Card, newCard Card) {
-     for  i, boardCard := range board  {
-        if boardCard == oldCard { 
-            board[i] = newCard
-            return
-        }
-     }
+	for i, boardCard := range board {
+		if boardCard == oldCard {
+			board[i] = newCard
+			return
+		}
+	}
 }
-
-    

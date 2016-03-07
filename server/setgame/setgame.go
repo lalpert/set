@@ -23,10 +23,10 @@ type Game struct {
 }
 
 func isSet(firstCard Card, secondCard Card, thirdCard Card) bool {
-	colorsMatch := stringMakesSet(firstCard.color, secondCard.color, thirdCard.color)
-	numbersMatch := intMakesSet(firstCard.number, secondCard.number, thirdCard.number)
-	fillsMatch := stringMakesSet(firstCard.fill, secondCard.fill, thirdCard.fill)
-	shapesMatch := stringMakesSet(firstCard.shape, secondCard.shape, thirdCard.shape)
+	colorsMatch := stringMakesSet(firstCard.Color, secondCard.Color, thirdCard.Color)
+	numbersMatch := intMakesSet(firstCard.Number, secondCard.Number, thirdCard.Number)
+	fillsMatch := stringMakesSet(firstCard.Fill, secondCard.Fill, thirdCard.Fill)
+	shapesMatch := stringMakesSet(firstCard.Shape, secondCard.Shape, thirdCard.Shape)
 	return colorsMatch && numbersMatch && fillsMatch && shapesMatch
 }
 
