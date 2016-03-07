@@ -5,8 +5,8 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
-    "encoding/json"
 )
 
 // hub maintains the set of active connections and broadcasts messages to the
@@ -54,34 +54,34 @@ func Deserialize(input []byte) (*Request, error) {
 }
 
 func (h *hub) run() {
-    api.initGame()
+	api.initGame()
 	for {
 		select {
 		case c := <-h.register:
-            log.Println("Register connection " + c)
+			log.Println("Register connection ")
 			h.connections[c] = true
 
 		case c := <-h.unregister:
-            log.Println("Unegister connection " + c)
+			log.Println("Unegister connection ")
 			if _, ok := h.connections[c]; ok {
-                api.unregisterConnection(c)
+				api.unregisterConnection(c)
 				delete(h.connections, c)
 				close(c.send)
 			}
 
 		case broadcaseMsg := <-h.broadcast:
-            log.Println("Got a boardcast message " + broadcaseMsg)
-        	incomingConnection := broadcaseMsg.connection
-            log.Println("incomingConnection " + incomingConnection)
-            message := broadcaseMsg.message
-            request, err := types.Deserialize(payload)
+			log.Println("Got a boardcast message ")
+			incomingConnection := broadcaseMsg.connection
+			log.Println("incomingConnection ")
+			message := broadcaseMsg.message
+			request, err := Deserialize(message)
 			if err != nil {
 				log.Println("Error deserializing: ", err)
 				continue
 			}
 			log.Println(message)
-            api.handleMsg(incomingConnection, message)	
-			
+			api.handleMsg(incomingConnection, *request, message)
+
 		}
 	}
 }

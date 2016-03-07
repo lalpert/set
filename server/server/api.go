@@ -56,10 +56,10 @@ type submitSetMessage struct {
 	cards []int // list of card ids
 }
 
-func (api *API) claimSet(conn *connection, request submitSetMessage) error{
+func (api *API) claimSet(conn *connection, request submitSetMessage) error {
 	player := api.game.Players[10101] //getPlayerByConnection(conn, game.Players)
-	response, err := api.game.ClaimSetByIds(player, request.cards)
-	return response, err
+	_, err := api.game.ClaimSetByIds(player, request.cards)
+	return err // for now, no return value
 }
 
 func (api *API) unregisterConnection(conn *connection) {
@@ -71,25 +71,18 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 	case ClaimSet:
 		claimSetRequest := &submitSetMessage{}
 		err := json.Unmarshal(message, claimSetRequest)
-		response, err := api.claimSet(conn, claimSetRequest)
-
-		//        case NewPlayer: // todo
-		//response, err := newPlayer(request)
-
+		if err != nil {
+			api.respondWithError(conn, err)
+			return
+		}
+		err = api.claimSet(conn, *claimSetRequest)
+		if err != nil {
+			api.respondWithError(conn, err)
+		}
+		//api.sendNewBoardState()
 	}
-
-	if err {
-		code = err.code
-		respondWith(err, code)
-		return
-	}
-	respondWith(reponse) // maybe break into multiple
 }
 
-// FoundSet - check that card are on board, cards make a set
-// then remove cards from board, deal new cards
-// tell clients: {player: X, removeCards: X, addCards: X}
-
-// DealMore
-// add 3 cards to board
-// return {player: X, newCards: X}
+func (api *API) respondWithError(conn *connection, err error) {
+	conn.ws.WriteJSON(err)
+}
