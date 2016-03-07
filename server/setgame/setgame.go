@@ -101,9 +101,9 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) error {
 
 }
 
-// GetBoard returns the game board
-func (g *Game) GetBoard() Board {
-	return g.board
+// GetBoardCards returns the cards on the game board
+func (g *Game) GetBoardCards() []Card {
+	return g.board.cards
 }
 
 // addCardsIfNoSet adds cards to the board in sets of 3 until the board contains a set
