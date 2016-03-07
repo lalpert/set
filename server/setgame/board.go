@@ -55,3 +55,17 @@ func (board Board) replaceCard(oldCard Card, newCard Card) {
 		}
 	}
 }
+
+// ContainsSet returns whether there is at least one set on the board
+func (board Board) ContainsSet() bool {
+	for i := 0; i < len(board); i++ {
+		for j := i + 1; j < len(board); j++ {
+			for k := j + 1; k < len(board); k++ {
+				if isSet(board[i], board[j], board[k]) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

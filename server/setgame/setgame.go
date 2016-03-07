@@ -50,7 +50,9 @@ func NewGame() *Game {
 
 	deck := createShuffledDeck()
 	board := deck.deal(12)
-	return &Game{players, deck, board}
+	game := &Game{players, deck, board}
+	game.addCardsIfNoSet()
+	return game
 }
 
 /*
@@ -85,6 +87,7 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) ([]Card, error) {
 	player.score++
 	newCards := g.deck.deal(3) // todo what if we're out of cards
 	g.board.replace(setCards, newCards)
+	g.addCardsIfNoSet()
 
 	//return cards, Player.score
 	return setCards, nil
@@ -94,4 +97,11 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) ([]Card, error) {
 // GetBoard returns the game board
 func (g *Game) GetBoard() Board {
 	return g.board
+}
+
+// addCardsIfNoSet adds cards to the board in sets of 3 until the board contains a set
+func (g *Game) addCardsIfNoSet() {
+	for !g.board.ContainsSet() {
+		g.board = append(g.board, g.deck.deal(3)...)
+	}
 }
