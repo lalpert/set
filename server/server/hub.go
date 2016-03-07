@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 )
 
@@ -42,47 +43,45 @@ var hubSingleton = hub{
 
 // Request represents a message coming from the client
 type Request struct {
-	ClientID string
 	Type string
-	Payload string // todo not string
 }
 
 // Deserialize unmarshals a byte array into a Request object
 func Deserialize(input []byte) (*Request, error) {
-	var message = &Message{}
+	var message = &Request{}
 	err := json.Unmarshal(input, message)
 	return message, err
 }
 
 func (h *hub) run() {
-    api.initGame()
+	api.initGame()
 	for {
 		select {
 		case c := <-h.register:
-            log.Println("Register connection " + c)
+			log.Println("Register connection ")
 			h.connections[c] = true
 
 		case c := <-h.unregister:
-            log.Println("Unegister connection " + c)
+			log.Println("Unegister connection ")
 			if _, ok := h.connections[c]; ok {
-                api.unregisterConnection(c)
+				api.unregisterConnection(c)
 				delete(h.connections, c)
 				close(c.send)
 			}
 
 		case broadcaseMsg := <-h.broadcast:
-            log.Println("Got a boardcast message " + broadcaseMsg)
-        	incomingConnection := broadcaseMsg.connection
-            payload := conMessage.message
-            message, err := types.Deserialize(payload)
-
+		
+			incomingConnection := broadcaseMsg.connection
+			log.Println("incomingConnection ")
+			message := broadcaseMsg.message
+			log.Println("Got a broadcast message", string(message));
+			request, err := Deserialize(message)
 			if err != nil {
 				log.Println("Error deserializing: ", err)
 				continue
 			}
-			log.Println(message)
-            api.handleMsg(incomingConnection, message)	
-			
+			api.handleMsg(incomingConnection, *request, message)
+
 		}
 	}
 }
