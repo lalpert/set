@@ -44,7 +44,7 @@ func (api *API) newPlayer(incomingConnection *connection) {
 	api.playerMap[incomingConnection] = player
 }
 
-func (api *API) getPlayer(id int, secret int) (*setgame.Player, error) {
+func (api *API) getPlayer(id int32, secret int32) (*setgame.Player, error) {
 	for _, player := range api.playerMap {
 		if player.ID == id {
 			if player.Secret != secret {
@@ -171,8 +171,8 @@ func (api *API) sendResponseToAll(response interface{}) {
 
 type idSecretMessage struct {
 	MsgType string `json:"type"`
-	ID      int    `json:"id"`
-	Secret  int    `json:"secret"`
+	ID      int32    `json:"id"`
+	Secret  int32    `json:"secret"`
 }
 
 type boardResponse struct {
