@@ -63,7 +63,7 @@ func (board *Board) ContainsSet() bool {
 		for j := i + 1; j < len(cards); j++ {
 			for k := j + 1; k < len(cards); k++ {
 				if isSet(cards[i], cards[j], cards[k]) {
-					log.Println(board[i], board[j], board[k]);
+					log.Println(cards[i], cards[j], cards[k]);
 					return true
 				}
 			}

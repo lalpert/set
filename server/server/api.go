@@ -171,8 +171,8 @@ func (api *API) sendResponseToAll(response interface{}) {
 
 type idSecretMessage struct {
 	MsgType string `json:"type"`
-	ID      int    `json:id`
-	Secret  int    `json:secret`
+	ID      int    `json:"id"`
+	Secret  int    `json:"secret"`
 }
 
 type boardResponse struct {
