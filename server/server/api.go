@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 
 	"log"
 
@@ -19,21 +20,19 @@ const (
 	RejoinGame = "REJOIN_GAME"
 	// Declare that you have found a set with the given cards
 	ClaimSet = "CLAIM_SET"
-	// Ask for 3 more cards to be dealt
-	DealMore = "DealMore"
 )
 
 // API holds the variables that the API needs to keep track of
 type API struct {
 	game            *setgame.Game
-	playerMap       map[*connection]setgame.Player
-	inactivePlayers map[int]setgame.Player // int is the player's uuid
+	playerMap       map[*connection]*setgame.Player
+	inactivePlayers map[int]*setgame.Player // int is the player's uuid
 }
 
 var api = API{
 	game:            nil,
-	playerMap:       make(map[*connection]setgame.Player),
-	inactivePlayers: make(map[int]setgame.Player), // int is the uuid
+	playerMap:       make(map[*connection]*setgame.Player),
+	inactivePlayers: make(map[int]*setgame.Player), // int is the uuid
 }
 
 func (api *API) initGame() {
@@ -41,66 +40,93 @@ func (api *API) initGame() {
 }
 
 func (api *API) newPlayer(incomingConnection *connection) {
-	player := api.game.AddNewPlayer("")
+	player := setgame.CreateNewPlayer("")
 	api.playerMap[incomingConnection] = player
 }
 
-/*
-
-func (api *API) reregisterPlayer(incomingConnection, message) {
-	player, err = getPlayer(message.secret)
-	if err {
-		return err
+func (api *API) getPlayer(id int, secret int) (*setgame.Player, error) {
+	for _, player := range api.playerMap {
+		if player.ID == id {
+			if player.Secret != secret {
+				return nil, errors.New("Secret does not match ID")
+			}
+			return player, nil
+		}
 	}
-	api.playerMap[incomingConnection] = player
+	return nil, errors.New("No player found with given ID")
 }
-*/
 
 type submitSetMessage struct {
 	Cards []int `json:"cards"` // list of card ids
-}
-
-func (api *API) claimSet(conn *connection, request submitSetMessage) error {
-	player := api.game.Players[10101] //getPlayerByConnection(conn, game.Players)
-	err := api.game.ClaimSetByIds(player, request.Cards)
-	return err // for now, no return value
 }
 
 func (api *API) unregisterConnection(conn *connection) {
 	// move player to list of inactive players
 }
 
+func (api *API) joinGame(conn *connection) {
+	api.newPlayer(conn)
+	api.sendIDAndSecret(conn)
+	//api.sendAllPlayerInfoToAll()
+	api.sendBoardState(conn)
+}
+
+func (api *API) rejoinGame(conn *connection, message []byte) {
+	idSecretRequest := &idSecretMessage{}
+	err := json.Unmarshal(message, idSecretRequest)
+	if err != nil {
+		api.respondWithError(conn, err)
+		return
+	}
+	player, err := api.getPlayer(idSecretRequest.ID, idSecretRequest.Secret)
+	if err != nil {
+		api.respondWithError(conn, err)
+		return
+	}
+	api.playerMap[conn] = player // TODO null out old connection
+	api.sendBoardState(conn)
+}
+
+func (api *API) claimSet(conn *connection, message []byte) {
+	claimSetRequest := &submitSetMessage{}
+	err := json.Unmarshal(message, claimSetRequest)
+	if err != nil {
+		api.respondWithError(conn, err)
+		return
+	}
+	err = api.claimSetFromRequest(conn, *claimSetRequest)
+	if err != nil {
+		api.respondWithError(conn, err)
+	}
+	api.sendBoardStateToAll()
+	if api.game.GameOver() {
+		api.respondWithTypeToAll("GAME_OVER")
+		api.initGame()
+		api.sendBoardStateToAll()
+	}
+}
+
+func (api *API) claimSetFromRequest(conn *connection, request submitSetMessage) error {
+	player := api.playerMap[conn] //getPlayerByConnection(conn, game.Players)
+	err := api.game.ClaimSetByIds(player, request.Cards)
+	return err // for now, no return value
+}
+
 func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 	log.Println("Got message: ", request)
 	switch request.Type {
 	case JoinGame:
-		api.newPlayer(conn)
-		api.sendIDAndSecret(conn)
-		//api.sendAllPlayerInfoToAll()
-		api.sendBoardState(conn)
+		api.joinGame(conn)
+	case RejoinGame:
+		api.rejoinGame(conn, message)
 	case ClaimSet:
-		claimSetRequest := &submitSetMessage{}
-		err := json.Unmarshal(message, claimSetRequest)
-		if err != nil {
-			api.respondWithError(conn, err)
-			return
-		}
-		err = api.claimSet(conn, *claimSetRequest)
-		if err != nil {
-			api.respondWithError(conn, err)
-		}
-		api.sendBoardStateToAll()
-		if api.game.GameOver() {
-			api.respondWithTypeToAll("GAME_OVER")
-			api.initGame()
-			api.sendBoardStateToAll()
-		}
+		api.claimSet(conn, message)
 	}
 }
 
 func (api *API) sendIDAndSecret(conn *connection) {
 	player := api.playerMap[conn]
-	response := idSecretResponse{"JOIN_ACCEPTED", player.ID, player.Secret}
+	response := idSecretMessage{"JOIN_ACCEPTED", player.ID, player.Secret}
 	sendResponse(conn, response)
 }
 
@@ -141,9 +167,9 @@ func (api *API) sendResponseToAll(response interface{}) {
 	}
 }
 
-// TODO inheritance for response types
+// TODO inheritance for response/message types
 
-type idSecretResponse struct {
+type idSecretMessage struct {
 	MsgType string `json:"type"`
 	ID      int    `json:id`
 	Secret  int    `json:secret`
