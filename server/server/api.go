@@ -88,6 +88,8 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 		api.sendBoardState(conn)
 		if api.game.GameOver() {
 			api.respondWithType(conn, "GAME_OVER")
+			api.initGame()
+			api.sendBoardState(conn)
 		}
 	}
 }
