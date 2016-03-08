@@ -2,22 +2,20 @@ package setgame
 
 import (
 	"errors"
+	"math/rand"
 )
-
-// UUID is a player's unique id. It is not a secret.
-type UUID int
 
 // Player represents a player for one game
 type Player struct {
-	name   string
-	uuid   UUID
-	secret string // secret that only this client should know, used mainly to register if dropped
-	score  int    // number of sets
+	Name   string `json:"name"`
+	ID     int    `json:"id"`    // ID is a player's unique id. It is not a secret.
+	Score  int    `json:"score"` // number of sets
+	Secret int    `json:"-"`     // secret that only this client should know, used mainly to register if dropped
 }
 
 // Game represents a Set game
 type Game struct {
-	Players map[UUID]Player
+	Players map[int]Player
 	deck    Deck
 	board   Board
 }
@@ -42,10 +40,10 @@ func intMakesSet(first int, second int, third int) bool {
 
 // NewGame creates a new game of set with a shuffled deck, board is 12 random cards, no players
 func NewGame() *Game {
-	players := make(map[UUID]Player)
+	players := make(map[int]Player)
 
 	// FOR NOW: add a fake player 1
-	player1 := Player{"Fake Player", 10101, "secretcode", 0}
+	player1 := Player{"Fake Player", 10101, 12345, 0}
 	players[10101] = player1
 
 	deck := createShuffledDeck()
@@ -55,16 +53,15 @@ func NewGame() *Game {
 	return game
 }
 
-/*
-func (g *Game) addNewPlayer(name string) Player{
-    uuid = createRandomUuid()
-    secret = createRandomSecret()
-    score = 0
-    player := Player{uuid:uuid, secret:secret, score:score, name:name}
-    g.players[uuid] = player
-    return player
+// AddNewPlayer creates a new player with a random uuid and secret
+func (g *Game) AddNewPlayer(name string) Player {
+	uuid := rand.Int()
+	secret := rand.Int() // TODO: golang rand is deterministic so this is not really secret
+	score := 0
+	player := Player{ID: uuid, Secret: secret, Score: score, Name: name}
+	g.Players[uuid] = player
+	return player
 }
-*/
 
 // ClaimSetByIds takes a Player and a list of card IDs, checks if those cards make a valid set,
 // and if so replaces them with new cards
@@ -84,7 +81,7 @@ func (g *Game) ClaimSetByIds(player Player, cardIDs []int) error {
 	}
 
 	// If we get here, cards are on board and they are a set!
-	player.score++
+	player.Score++
 
 	if len(g.board.cards) > 12 || len(g.deck.cards) == 0 {
 		// If we can't or don't want to deal new cards, just remove set cards

@@ -40,18 +40,19 @@ func (api *API) initGame() {
 	api.game = setgame.NewGame()
 }
 
-/*
-func  (api *API) newPlayer(incomingConnection *connection) {
-    player := api.game.AddNewPlayer()
-    api.playerMap[incomingConnection] = player
+func (api *API) newPlayer(incomingConnection *connection) {
+	player := api.game.AddNewPlayer("")
+	api.playerMap[incomingConnection] = player
 }
 
-func  (api *API) reregisterPlayer(incomingConnection, message) {
-    player, err = getPlayer(message.secret);
-    if (err) {
-        return err
-    }
-    api.playerMap[incomingConnection] = player
+/*
+
+func (api *API) reregisterPlayer(incomingConnection, message) {
+	player, err = getPlayer(message.secret)
+	if err {
+		return err
+	}
+	api.playerMap[incomingConnection] = player
 }
 */
 
@@ -73,6 +74,9 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 	log.Println("Got message: ", request)
 	switch request.Type {
 	case JoinGame:
+		api.newPlayer(conn)
+		api.sendIDAndSecret(conn)
+		//api.sendAllPlayerInfoToAll()
 		api.sendBoardState(conn)
 	case ClaimSet:
 		claimSetRequest := &submitSetMessage{}
@@ -85,11 +89,19 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 		if err != nil {
 			api.respondWithError(conn, err)
 		}
-		api.sendBoardState(conn)
+		api.sendBoardStateToAll()
 		if api.game.GameOver() {
-			api.respondWithType(conn, "GAME_OVER")
+			api.respondWithTypeToAll("GAME_OVER")
+			api.initGame()
+			api.sendBoardStateToAll()
 		}
 	}
+}
+
+func (api *API) sendIDAndSecret(conn *connection) {
+	player := api.playerMap[conn]
+	response := idSecretResponse{"JOIN_ACCEPTED", player.ID, player.Secret}
+	sendResponse(conn, response)
 }
 
 func (api *API) respondWithError(conn *connection, err error) {
@@ -102,14 +114,39 @@ func (api *API) respondWithType(conn *connection, typeString string) {
 	sendResponse(conn, response)
 }
 
+func (api *API) respondWithTypeToAll(typeString string) {
+	response := typeResponse{typeString}
+	api.sendResponseToAll(response)
+}
+
 func (api *API) sendBoardState(conn *connection) {
 	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
 	sendResponse(conn, response)
 }
 
+func (api *API) sendBoardStateToAll() {
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
+	api.sendResponseToAll(response)
+}
+
 func sendResponse(conn *connection, response interface{}) {
 	stringResponse, _ := json.Marshal(response)
 	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
+}
+
+func (api *API) sendResponseToAll(response interface{}) {
+	stringResponse, _ := json.Marshal(response)
+	for conn := range api.playerMap {
+		conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
+	}
+}
+
+// TODO inheritance for response types
+
+type idSecretResponse struct {
+	MsgType string `json:"type"`
+	ID      int    `json:id`
+	Secret  int    `json:secret`
 }
 
 type boardResponse struct {
