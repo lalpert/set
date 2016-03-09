@@ -67,7 +67,7 @@ func (api *API) unregisterConnection(conn *connection) {
 func (api *API) joinGame(conn *connection) {
 	api.newPlayer(conn)
 	api.sendIDAndSecret(conn)
-	//api.sendAllPlayerInfoToAll()
+	api.sendAllPlayerInfoToAll()
 	api.sendBoardState(conn)
 }
 
@@ -84,6 +84,7 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 		return
 	}
 	api.playerMap[conn] = player // TODO null out old connection
+	api.sendAllPlayerInfoToAll()
 	api.sendBoardState(conn)
 }
 
@@ -107,9 +108,12 @@ func (api *API) claimSet(conn *connection, message []byte) {
 }
 
 func (api *API) claimSetFromRequest(conn *connection, request submitSetMessage) error {
-	player := api.playerMap[conn] //getPlayerByConnection(conn, game.Players)
-	err := api.game.ClaimSetByIds(player, request.Cards)
-	return err // for now, no return value
+	if player, ok := api.playerMap[conn]; ok {
+		err := api.game.ClaimSetByIds(player, request.Cards)
+		return err // for now, no return value
+	}
+	log.Println("Error: no player found for connection")
+	return errors.New("No player found for connection. Has player joined game?")
 }
 
 func (api *API) handleMsg(conn *connection, request Request, message []byte) {
@@ -153,6 +157,14 @@ func (api *API) sendBoardState(conn *connection) {
 func (api *API) sendBoardStateToAll() {
 	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
 	api.sendResponseToAll(response)
+}
+
+func (api *API) sendAllPlayerInfoToAll() {
+	players := []*setgame.Player{} // todo is there a 1-liner for this?
+	for _, p := range api.playerMap {
+		players = append(players, p) // todo dedupe
+	}
+	api.sendResponseToAll(players)
 }
 
 func sendResponse(conn *connection, response interface{}) {
