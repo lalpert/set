@@ -10,7 +10,9 @@ import React, {
   Text,
   View,
   TouchableNativeFeedback,
-  Websocket
+  Websocket,
+  Animated,
+  LayoutAnimation
 } from 'react-native';
 
 import Button from 'react-native-button'
@@ -20,10 +22,40 @@ export default React.createClass({
     return { board: [] }
   },
 
+  getInitialState() {
+    return {
+      claimedOpacity: new Animated.Value(1)
+    }
+  },
+
+  componentWillReceiveProps(nextProps) {
+    if (!this.props.claimed && nextProps.claimed) {
+      setTimeout(nextProps.claimed.onComplete, 1000);
+      Animated.timing(
+        this.state.claimedOpacity,
+        {toValue: 0, duration: 1000}
+      ).start();
+    } else if (this.props.claimed && !nextProps.claimed) {
+      this.state.claimedOpacity.setValue(1);
+    }
+  },
+
+  cardClaimed(id) {
+    if(this.props.claimed) {
+      return this.props.claimed.cards.indexOf(id) != -1;
+    } else {
+      return false;
+    }
+  },
+
   render() {
     var cards = this.props.board.map(card => {
-      return <SetCard key={card.id} {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />;
+      const opacity = this.cardClaimed(card.id) ? this.state.claimedOpacity : 1;
+      return <Animated.View key={card.id} style={{transform: [{scale: opacity}]}}>
+        <SetCard {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />
+      </Animated.View>
     });
+
     const rows = [];
 
     while(cards.length > 0) {
@@ -58,6 +90,19 @@ export default React.createClass({
 });
 
 const SetCard = React.createClass({
+  getInitialState() {
+    return {
+      fadeIn: new Animated.Value(0)
+    }
+  },
+
+  componentWillMount() {
+    this.state.fadeIn.setValue(0);
+    Animated.timing(          // Uses easing functions
+      this.state.fadeIn,    // The value to drive
+      {toValue: 1, duration: 1000}           // Configuration
+    ).start();
+  },
 
   onClick() {
     if (this.props.onClick) {
@@ -66,11 +111,13 @@ const SetCard = React.createClass({
   },
 
   render() {
-    return <TouchableNativeFeedback onPress={this.onClick}>
-      <View style={[styles.card, this.selectedStyle()]}>
-        {this.setIcons()}
-      </View>
-    </TouchableNativeFeedback>;
+    return <Animated.View style={[{opacity: this.state.fadeIn}]}>
+        <TouchableNativeFeedback onPress={this.onClick}>
+          <View style={[styles.card, this.selectedStyle()]}>
+            {this.setIcons()}
+          </View>
+          </TouchableNativeFeedback>
+      </Animated.View>;
   },
 
   setIcons() {
@@ -173,6 +220,8 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderRadius: 2,
     borderWidth: 2,
+    padding: 10,
+    margin: 10
   },
 
   buffer: {
