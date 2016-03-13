@@ -25,7 +25,7 @@ export default React.createClass({
 
 const PlayerView = React.createClass({
   render() {
-    return <View>
+    return <View style={styles.player}>
       <Text>Player: {this.props.id}</Text>
       <Text>Score: {this.props.score}</Text>
     </View>;
@@ -39,7 +39,16 @@ const PlayerView = React.createClass({
 });
 
 const styles = StyleSheet.create({
+  player: {
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 3,
+    padding: 5,
+    margin: 5
+  },
   playersGrid: {
-    flexDirection: 'row'
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between'
   }
 });

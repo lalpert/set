@@ -17,6 +17,8 @@ import React, {
 
 import Button from 'react-native-button'
 
+import Util from './Util'
+
 export default React.createClass({
   getDefaultProps() {
     return { board: [] }
@@ -56,15 +58,11 @@ export default React.createClass({
       </Animated.View>
     });
 
-    const rows = [];
+    const fillerCard = (n) => {
+      return <View key={100+n} style={styles.cardBuffer} />
+    };
 
-    while(cards.length > 0) {
-      const row = cards.splice(0, 3);
-      while(row.length < 3) {
-        row.push(<View key={100+row.length} style={styles.cardBuffer} />);
-      }
-      rows.push(row);
-    }
+    const rows = Util.Grouped(cards, 3, fillerCard);
 
     const renderableRows = rows.map((row, index) => {
       return <View key={index} style={styles.cardRow}>{row}</View>
@@ -75,12 +73,14 @@ export default React.createClass({
     return (
       <View style={styles.container}>
         {renderableRows}
-        <Button disabled={!canSubmit} onPress={this.props.onSubmit}>
+        <Button style={{fontSize: 20}} containerStyle={styles.button} disabled={!canSubmit} onPress={this.props.onSubmit}>
           Submit Set!
         </Button>
       </View>
     );
   },
+
+
 
   propTypes: {
     board: React.PropTypes.array.isRequired,
