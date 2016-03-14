@@ -24,36 +24,11 @@ export default React.createClass({
     return { board: [] }
   },
 
-  getInitialState() {
-    return {
-      claimedOpacity: new Animated.Value(1)
-    }
-  },
-
-  componentWillReceiveProps(nextProps) {
-    if (!this.props.claimed && nextProps.claimed) {
-      setTimeout(nextProps.claimed.onComplete, 1000);
-      Animated.timing(
-        this.state.claimedOpacity,
-        {toValue: 0, duration: 1000}
-      ).start();
-    } else if (this.props.claimed && !nextProps.claimed) {
-      this.state.claimedOpacity.setValue(1);
-    }
-  },
-
-  cardClaimed(id) {
-    if(this.props.claimed) {
-      return this.props.claimed.cards.indexOf(id) != -1;
-    } else {
-      return false;
-    }
-  },
 
   render() {
     var cards = this.props.board.map(card => {
-      const opacity = this.cardClaimed(card.id) ? this.state.claimedOpacity : 1;
-      return <Animated.View key={card.id} style={{transform: [{scale: opacity}]}}>
+      const opacity = this.props.isCardClaimed(card.id) ? this.props.claimedAnimation : 1;
+      return <Animated.View key={card.id} style={{opacity: opacity}}>
         <SetCard {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />
       </Animated.View>
     });
@@ -85,7 +60,8 @@ export default React.createClass({
   propTypes: {
     board: React.PropTypes.array.isRequired,
     onSelect: React.PropTypes.func.isRequired,
-    onSubmit: React.PropTypes.func.isRequired
+    onSubmit: React.PropTypes.func.isRequired,
+    isCardClaimed: React.PropTypes.func.isRequired
   }
 });
 
