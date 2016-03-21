@@ -67,8 +67,8 @@ func (api *API) unregisterConnection(conn *connection) {
 func (api *API) joinGame(conn *connection) {
 	api.newPlayer(conn)
 	api.sendIDAndSecret(conn)
-	api.sendAllPlayerInfoToAll()
 	api.sendBoardState(conn)
+	api.sendBoardStateToAll()
 }
 
 func (api *API) rejoinGame(conn *connection, message []byte) {
@@ -84,36 +84,41 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 		return
 	}
 	api.playerMap[conn] = player // TODO null out old connection
-	api.sendAllPlayerInfoToAll()
 	api.sendBoardState(conn)
 }
 
 func (api *API) claimSet(conn *connection, message []byte) {
 	claimSetRequest := &submitSetMessage{}
-	err := json.Unmarshal(message, claimSetRequest)
-	if err != nil {
-		api.respondWithError(conn, err)
+	mashallError := json.Unmarshal(message, claimSetRequest)
+	if mashallError != nil {
+		api.respondWithError(conn, mashallError)
 		return
 	}
-	err = api.claimSetFromRequest(conn, *claimSetRequest)
+	action, err := api.claimSetFromRequest(conn, *claimSetRequest)
 	if err != nil {
+		// TODO: distinguish between invalid move and error
 		api.respondWithError(conn, err)
-	}
-	api.sendBoardStateToAll()
-	if api.game.GameOver() {
-		api.respondWithTypeToAll("GAME_OVER")
-		api.initGame()
-		api.sendBoardStateToAll()
+	} else {
+		api.sendBoardStateToAllWithActions(*action)
+		if api.game.GameOver() {
+			api.respondWithTypeToAll("GAME_OVER")
+			api.initGame()
+			api.sendBoardStateToAll()
+		}
 	}
 }
 
-func (api *API) claimSetFromRequest(conn *connection, request submitSetMessage) error {
+func (api *API) claimSetFromRequest(conn *connection, request submitSetMessage) (*setgame.Action, error) {
 	if player, ok := api.playerMap[conn]; ok {
 		err := api.game.ClaimSetByIds(player, request.Cards)
-		return err // for now, no return value
+		if err != nil {
+			return &setgame.Action{"SET_INVALID", player.ID, request.Cards}, nil
+		} else {
+			return &setgame.Action{"SET_CLAIMED", player.ID, request.Cards}, nil
+		}
 	}
 	log.Println("Error: no player found for connection")
-	return errors.New("No player found for connection. Has player joined game?")
+	return nil, errors.New("No player found for connection. Has player joined game?")
 }
 
 func (api *API) handleMsg(conn *connection, request Request, message []byte) {
@@ -150,30 +155,42 @@ func (api *API) respondWithTypeToAll(typeString string) {
 }
 
 func (api *API) sendBoardState(conn *connection) {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil}
+	sendResponse(conn, response)
+}
+
+func (api *API) sendBoardStateWithActions(conn *connection, action *setgame.Action) {
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), action}
 	sendResponse(conn, response)
 }
 
 func (api *API) sendBoardStateToAll() {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards()}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil}
 	api.sendResponseToAll(response)
 }
 
-func (api *API) sendAllPlayerInfoToAll() {
-	players := []*setgame.Player{} // todo is there a 1-liner for this?
+func (api *API) sendBoardStateToAllWithActions(action setgame.Action) {
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), &action}
+	api.sendResponseToAll(response)
+}
+
+func (api *API) getPlayers() []setgame.Player {
+	players := []setgame.Player{} // todo is there a 1-liner for this?
 	for _, p := range api.playerMap {
-		players = append(players, p) // todo dedupe
+		players = append(players, *p) // todo dedupe
 	}
-	api.sendResponseToAll(players)
+	return players
 }
 
 func sendResponse(conn *connection, response interface{}) {
 	stringResponse, _ := json.Marshal(response)
+	log.Println("Responding to one:", string(stringResponse))
 	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
 }
 
 func (api *API) sendResponseToAll(response interface{}) {
 	stringResponse, _ := json.Marshal(response)
+	log.Println("Responding to all:", string(stringResponse))
 	for conn := range api.playerMap {
 		conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
 	}
@@ -183,13 +200,15 @@ func (api *API) sendResponseToAll(response interface{}) {
 
 type idSecretMessage struct {
 	MsgType string `json:"type"`
-	ID      int32    `json:"id"`
-	Secret  int32    `json:"secret"`
+	ID      int32  `json:"id"`
+	Secret  int32  `json:"secret"`
 }
 
 type boardResponse struct {
-	MsgType   string         `json:"type"`
-	GameBoard []setgame.Card `json:"board"`
+	MsgType   string           `json:"type"`
+	GameBoard []setgame.Card   `json:"board"`
+	Players   []setgame.Player `json:"players"`
+	Action    *setgame.Action  `json:"action"`
 }
 
 type errorResponse struct {
