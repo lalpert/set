@@ -4,7 +4,6 @@
 'use strict';
 
 import React, { Text, View, Animated } from 'react-native';
-import {bindActionCreators} from 'redux';
 import { connect } from 'react-redux';
 import SetView from './SetView'
 import Players from './Players'

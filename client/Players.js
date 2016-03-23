@@ -38,12 +38,13 @@ export default React.createClass({
 const PlayerView = React.createClass({
   render() {
     return <Animated.View style={[this.props.animatedStyle, styles.player]}>
-      <Text>Player: {this.props.id}</Text>
+      <Text>Player: {this.props.name}</Text>
       <Text>Score: {this.props.score}</Text>
     </Animated.View>;
   },
 
   propTypes: {
+    name: React.PropTypes.string.isRequired,
     id: React.PropTypes.number.isRequired,
     score: React.PropTypes.number.isRequired,
     animatedStyle: React.PropTypes.object
