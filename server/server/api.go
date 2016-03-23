@@ -39,8 +39,8 @@ func (api *API) initGame() {
 	api.game = setgame.NewGame()
 }
 
-func (api *API) newPlayer(incomingConnection *connection) {
-	player := setgame.CreateNewPlayer("")
+func (api *API) newPlayer(incomingConnection *connection, name string) {
+	player := setgame.CreateNewPlayer(name)
 	api.playerMap[incomingConnection] = player
 }
 
@@ -64,8 +64,14 @@ func (api *API) unregisterConnection(conn *connection) {
 	// move player to list of inactive players
 }
 
-func (api *API) joinGame(conn *connection) {
-	api.newPlayer(conn)
+func (api *API) joinGame(conn *connection, message []byte) {
+    joinGameRequest := &nameMessage{}
+    err := json.Unmarshal(message, joinGameRequest);
+    if err != nil {
+		api.respondWithError(conn, err)
+		return
+	}
+	api.newPlayer(conn, joinGameRequest.Name)
 	api.sendIDAndSecret(conn)
 	api.sendBoardState(conn)
 	api.sendBoardStateToAll()
@@ -125,7 +131,7 @@ func (api *API) handleMsg(conn *connection, request Request, message []byte) {
 	log.Println("Got message: ", request)
 	switch request.Type {
 	case JoinGame:
-		api.joinGame(conn)
+		api.joinGame(conn, message)
 	case RejoinGame:
 		api.rejoinGame(conn, message)
 	case ClaimSet:
@@ -197,6 +203,9 @@ func (api *API) sendResponseToAll(response interface{}) {
 }
 
 // TODO inheritance for response/message types
+type nameMessage struct {
+    Name string `json:"name"`
+}
 
 type idSecretMessage struct {
 	MsgType string `json:"type"`
