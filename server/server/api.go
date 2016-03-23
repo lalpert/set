@@ -44,16 +44,16 @@ func (api *API) newPlayer(incomingConnection *connection, name string) {
 	api.playerMap[incomingConnection] = player
 }
 
-func (api *API) getPlayer(id int32, secret int32) (*setgame.Player, error) {
-	for _, player := range api.playerMap {
+func (api *API) getPlayer(id int32, secret int32) (*setgame.Player, *connection, error) {
+	for conn, player := range api.playerMap {
 		if player.ID == id {
 			if player.Secret != secret {
-				return nil, errors.New("Secret does not match ID")
+				return nil, nil, errors.New("Secret does not match ID")
 			}
-			return player, nil
+			return player, conn, nil
 		}
 	}
-	return nil, errors.New("No player found with given ID")
+	return nil, nil, errors.New("No player found with given ID")
 }
 
 type submitSetMessage struct {
@@ -65,9 +65,9 @@ func (api *API) unregisterConnection(conn *connection) {
 }
 
 func (api *API) joinGame(conn *connection, message []byte) {
-    joinGameRequest := &nameMessage{}
-    err := json.Unmarshal(message, joinGameRequest);
-    if err != nil {
+	joinGameRequest := &nameMessage{}
+	err := json.Unmarshal(message, joinGameRequest)
+	if err != nil {
 		api.respondWithError(conn, err)
 		return
 	}
@@ -84,12 +84,16 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 		api.respondWithError(conn, err)
 		return
 	}
-	player, err := api.getPlayer(idSecretRequest.ID, idSecretRequest.Secret)
+	player, oldConn, err := api.getPlayer(idSecretRequest.ID, idSecretRequest.Secret)
 	if err != nil {
 		api.respondWithError(conn, err)
 		return
 	}
-	api.playerMap[conn] = player // TODO null out old connection
+	// TODO null out old connection
+	delete(api.playerMap, oldConn)
+
+	// Add new connection
+	api.playerMap[conn] = player
 	api.sendBoardState(conn)
 }
 
@@ -204,7 +208,7 @@ func (api *API) sendResponseToAll(response interface{}) {
 
 // TODO inheritance for response/message types
 type nameMessage struct {
-    Name string `json:"name"`
+	Name string `json:"name"`
 }
 
 type idSecretMessage struct {
