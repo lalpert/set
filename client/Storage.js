@@ -16,11 +16,12 @@ const setName = async (name) => {
 };
 
 const getConfig = async () => {
-  const config = AsyncStorage.getItem(StorageKeyConfig);
+  const config = await AsyncStorage.getItem(StorageKeyConfig);
   if (config) {
     try {
       return JSON.parse(config);
     } catch (e) {
+      console.warn("Could not parse", config);
       await clearConfig();
       return null;
     }
@@ -32,6 +33,7 @@ const getConfig = async () => {
 
 const setConfig = async (id, secret) => {
   const json = JSON.stringify({id, secret});
+  console.warn("writing", json, id, secret);
   return await AsyncStorage.setItem(StorageKeyConfig, json);
 };
 
