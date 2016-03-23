@@ -1,8 +1,6 @@
 package setgame
 
-import (
-	"math/rand"
-)
+import "math/rand"
 
 // Deck is a list of cards
 type Deck struct {
