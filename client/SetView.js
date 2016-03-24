@@ -10,29 +10,35 @@ import React, {
   Text,
   View,
   TouchableNativeFeedback,
-  Websocket
+  Websocket,
+  Animated,
+  LayoutAnimation
 } from 'react-native';
 
 import Button from 'react-native-button'
+
+import Util from './Util'
 
 export default React.createClass({
   getDefaultProps() {
     return { board: [] }
   },
 
+
   render() {
     var cards = this.props.board.map(card => {
-      return <SetCard key={card.id} {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />;
+      const opacity = this.props.isCardClaimed(card.id) ? this.props.claimedAnimation : 1;
+      const deltaX = this.props.isCardInvalid(card.id) ? this.props.invalidAnimation : 0;
+      return <Animated.View key={card.id} style={{opacity: opacity, transform: [{translateX: deltaX}]}}>
+        <SetCard {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />
+      </Animated.View>
     });
-    const rows = [];
 
-    while(cards.length > 0) {
-      const row = cards.splice(0, 3);
-      while(row.length < 3) {
-        row.push(<View key={100+row.length} style={styles.cardBuffer} />);
-      }
-      rows.push(row);
-    }
+    const fillerCard = (n) => {
+      return <View key={100+n} style={styles.cardBuffer} />
+    };
+
+    const rows = Util.Grouped(cards, 3, fillerCard);
 
     const renderableRows = rows.map((row, index) => {
       return <View key={index} style={styles.cardRow}>{row}</View>
@@ -43,21 +49,37 @@ export default React.createClass({
     return (
       <View style={styles.container}>
         {renderableRows}
-        <Button disabled={!canSubmit} onPress={this.props.onSubmit}>
+        <Button style={{fontSize: 20}} containerStyle={styles.button} disabled={!canSubmit} onPress={this.props.onSubmit}>
           Submit Set!
         </Button>
       </View>
     );
   },
 
+
+
   propTypes: {
     board: React.PropTypes.array.isRequired,
     onSelect: React.PropTypes.func.isRequired,
-    onSubmit: React.PropTypes.func.isRequired
+    onSubmit: React.PropTypes.func.isRequired,
+    isCardClaimed: React.PropTypes.func.isRequired
   }
 });
 
 const SetCard = React.createClass({
+  getInitialState() {
+    return {
+      fadeIn: new Animated.Value(0)
+    }
+  },
+
+  componentWillMount() {
+    this.state.fadeIn.setValue(0);
+    Animated.timing(          // Uses easing functions
+      this.state.fadeIn,    // The value to drive
+      {toValue: 1, duration: 1000}           // Configuration
+    ).start();
+  },
 
   onClick() {
     if (this.props.onClick) {
@@ -66,11 +88,13 @@ const SetCard = React.createClass({
   },
 
   render() {
-    return <TouchableNativeFeedback onPress={this.onClick}>
-      <View style={[styles.card, this.selectedStyle()]}>
-        {this.setIcons()}
-      </View>
-    </TouchableNativeFeedback>;
+    return <Animated.View style={[{opacity: this.state.fadeIn}]}>
+        <TouchableNativeFeedback onPress={this.onClick}>
+          <View style={[styles.card, this.selectedStyle()]}>
+            {this.setIcons()}
+          </View>
+          </TouchableNativeFeedback>
+      </Animated.View>;
   },
 
   setIcons() {
@@ -173,6 +197,8 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderRadius: 2,
     borderWidth: 2,
+    padding: 10,
+    margin: 10
   },
 
   buffer: {

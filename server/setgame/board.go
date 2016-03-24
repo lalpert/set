@@ -1,5 +1,7 @@
 package setgame
+
 import "log"
+
 // Board is the list of cards currently on the board.
 type Board struct {
 	cards []Card
@@ -63,7 +65,7 @@ func (board *Board) ContainsSet() bool {
 		for j := i + 1; j < len(cards); j++ {
 			for k := j + 1; k < len(cards); k++ {
 				if isSet(cards[i], cards[j], cards[k]) {
-					log.Println(cards[i], cards[j], cards[k]);
+					log.Println(cards[i], cards[j], cards[k])
 					return true
 				}
 			}
