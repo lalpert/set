@@ -72,6 +72,7 @@ func (api *API) unregisterConnection(conn *connection) {
 	if ok {
 		delete(api.playerMap, conn)
 		api.inactivePlayers[player.ID] = player
+		api.sendBoardStateToAll()
 	}
 }
 
@@ -115,7 +116,7 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 
 	// Add new connection
 	api.playerMap[conn] = player
-	api.sendBoardState(conn)
+	api.sendBoardStateToAll()
 }
 
 func (api *API) claimSet(conn *connection, message []byte) {
