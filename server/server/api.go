@@ -222,6 +222,7 @@ func sendResponse(conn *connection, response interface{}) {
 }
 
 func (api *API) sendResponseToAll(response interface{}) {
+	api.sequenceNum++
 	stringResponse, _ := json.Marshal(response)
 	log.Println("Responding to all:", string(stringResponse))
 	for conn := range api.playerMap {
