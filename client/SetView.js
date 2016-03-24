@@ -28,7 +28,8 @@ export default React.createClass({
   render() {
     var cards = this.props.board.map(card => {
       const opacity = this.props.isCardClaimed(card.id) ? this.props.claimedAnimation : 1;
-      return <Animated.View key={card.id} style={{opacity: opacity}}>
+      const deltaX = this.props.isCardInvalid(card.id) ? this.props.invalidAnimation : 0;
+      return <Animated.View key={card.id} style={{opacity: opacity, transform: [{translateX: deltaX}]}}>
         <SetCard {...card} selected={this.props.selected.indexOf(card.id) != -1} onClick={this.props.onSelect} />
       </Animated.View>
     });

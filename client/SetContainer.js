@@ -10,7 +10,11 @@ import Players from './Players'
 
 const SetContainer = React.createClass({
   getInitialState() {
-    return {playerPositions: {}, claimedAnimation: new Animated.Value(1)};
+    return {
+      playerPositions: {},
+      claimedAnimation: new Animated.Value(1),
+      invalidAnimation: new Animated.Value(10)
+    };
   },
 
   componentWillReceiveProps(nextProps) {
@@ -22,6 +26,25 @@ const SetContainer = React.createClass({
       ).start();
     } else if (this.props.claimed && !nextProps.claimed) {
       this.state.claimedAnimation.setValue(1);
+    }
+
+    if (!this.props.invalid && nextProps.invalid) {
+      this.state.invalidAnimation.setValue(10);
+      setTimeout(nextProps.invalid.onComplete, 500);
+      Animated.spring(
+        this.state.invalidAnimation,
+        {toValue: 0, friction: 2, tension: 120}
+      ).start();
+    } else if (this.props.claimed && !nextProps.claimed) {
+      this.state.invalidAnimation.setValue(10);
+    }
+  },
+
+  isCardInvalid(id) {
+    if (this.props.invalid) {
+      return this.props.invalid.cards.indexOf(id) != -1;
+    } else {
+      return false;
     }
   },
 
@@ -46,8 +69,11 @@ const SetContainer = React.createClass({
         onSubmit={this.onSubmit}
 
         isCardClaimed={this.isCardClaimed}
+        isCardInvalid={this.isCardInvalid}
 
         claimedAnimation={this.state.claimedAnimation}
+        invalidAnimation={this.state.invalidAnimation}
+
         playerLocations={this.state.playerPositions}
       />
       <Players
@@ -85,7 +111,8 @@ const SetContainer = React.createClass({
     players: React.PropTypes.array.isRequired,
     server: React.PropTypes.object.isRequired,
 
-    claimed: React.PropTypes.object
+    claimed: React.PropTypes.object,
+    invalid: React.PropTypes.object
   },
 
 });

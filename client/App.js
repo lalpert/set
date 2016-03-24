@@ -58,11 +58,11 @@ const reduce = (state, action) => {
         board: action.board,
         selected: filteredSelected,
         players: action.players,
-        claimed: undefined
+        claimed: undefined,
+        invalid: undefined
       });
 
     case "SET_NAME":
-      console.warn("setting name");
       return Object.assign({}, state, {player: Object.assign({}, state.player, {name: action.name})});
 
     case "SET_SECRET":
@@ -80,8 +80,16 @@ const reduce = (state, action) => {
       });
 
     case "SET_INVALID":
-      return state;
-
+      const onComplete = () => {
+        action.onComplete();
+        action.dispatch({type: "CLEAR_SELECTION"});
+      };
+      return Object.assign({}, state, {
+        invalid: {
+          cards: action.cardIds,
+          onComplete
+        }
+      });
 
 
     // LOCAL ACTIONS
@@ -90,6 +98,9 @@ const reduce = (state, action) => {
     case "CARD_DESELECTED":
       const selectedCards = state.selected.filter(id => id != action.cardId);
       return Object.assign({}, state, {selected: selectedCards});
+
+    case "CLEAR_SELECTION":
+      return Object.assign({}, state, {selected: []});
 
     case "CLAIM_SET":
       return state;
@@ -101,7 +112,7 @@ const reduce = (state, action) => {
 
 const processAction = (dispatch, gameAction, onComplete) => {
   if (gameAction) {
-    const completable = Object.assign({}, gameAction, {onComplete});
+    const completable = Object.assign({}, gameAction, {onComplete}, {dispatch});
     console.log("dispatching: ", completable);
     dispatch(completable);
   } else {
@@ -111,11 +122,9 @@ const processAction = (dispatch, gameAction, onComplete) => {
 
 const handleSideEffects = (message) => {
   if (message.type == "JOIN_ACCEPTED") {
-    console.warn("writing storage key");
     Storage.setConfig(message.id, message.secret);
-    //AsyncStorage.setItem(StorageKeySecret, JSON.stringify({id: message.id, secret: message.secret}));
   }
-}
+};
 
 const processMessage = (message) => {
   handleSideEffects(message);
@@ -134,7 +143,6 @@ const processMessage = (message) => {
 const loadFromStorage = async (dispatch) => {
   const playerName = await Storage.getName();
   const config = await Storage.getConfig();
-  console.warn("name", playerName);
   if (playerName) {
     dispatch({type: "SET_NAME", name: playerName});
   }
