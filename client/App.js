@@ -36,6 +36,7 @@ import Storage from './Storage'
 
 const defaultState = {board: [], selected: [], players: [], player: {name: ""}};
 const reduce = (state, action) => {
+  console.log("processing: ", action);
   switch (action.type) {
     // SERVER ACTIONS
     case "INIT":
@@ -48,7 +49,12 @@ const reduce = (state, action) => {
       return Object.assign({}, state, {ws: action.ws});
 
     case "JOIN_ACCEPTED":
-      return Object.assign({}, state, {player: Object.assign({}, state.player, {id: action.id, secret: action.secret})});
+      return Object.assign({}, state, {
+        player: Object.assign({}, state.player, {
+          id: action.id,
+          secret: action.secret
+        })
+      });
 
     case "SET_BOARD":
       if (action.seq <= state.seq) {
@@ -71,7 +77,12 @@ const reduce = (state, action) => {
       return Object.assign({}, state, {player: Object.assign({}, state.player, {name: action.name})});
 
     case "SET_SECRET":
-      return Object.assign({}, state, {player: Object.assign({}, state.player, {id: action.id, secret: action.secret})});
+      return Object.assign({}, state, {
+        player: Object.assign({}, state.player, {
+          id: action.id,
+          secret: action.secret
+        })
+      });
 
     // SUBACTIONS
     case "SET_CLAIMED":
@@ -95,6 +106,11 @@ const reduce = (state, action) => {
           onComplete
         }
       });
+
+    case "GAME_OVER":
+      setTimeout(() => action.onComplete(), 1000);
+      return state;
+    //return Object.assign({})
 
 
     // LOCAL ACTIONS
@@ -191,7 +207,7 @@ const Server = (store) => {
       } else if (message.type == "ERROR") {
         store.dispatch({type: "CLEAR"});
         Storage.clearConfig().then(() => {
-            loadFromStorage(store.dispatch)
+          loadFromStorage(store.dispatch)
         }).then(() => connect());
       } else {
         store.dispatch(processMessage(message));
@@ -229,16 +245,18 @@ const Server = (store) => {
 
 const server = Server(store);
 
-loadFromStorage(store.dispatch).then(() => server.connect());
+loadFromStorage(store.dispatch);
 
 export default React.createClass({
   renderScene(route, nav) {
     if (route == undefined) {
       return <View><Text>Undefined</Text></View>
     }
-    switch(route.id) {
+    switch (route.id) {
       case 'intro':
-        return <IntroContainer gotoMultiplayerGlobal={() => nav.push({id: 'multi'})}/>;
+        return <IntroContainer gotoMultiplayerGlobal={() => { server.connect();
+          nav.push({id: 'multi'}) }
+        }/>;
       case 'multi':
         return <SetContainer server={server}/>;
       default:
