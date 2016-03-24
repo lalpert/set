@@ -27,6 +27,7 @@ type API struct {
 	game            *setgame.Game
 	playerMap       map[*connection]*setgame.Player
 	inactivePlayers map[int32]*setgame.Player // int is the player's id
+	sequenceNum     int                       // Use to declare the order of messages sent to client
 }
 
 var api = API{
@@ -83,7 +84,6 @@ func (api *API) joinGame(conn *connection, message []byte) {
 	}
 	api.newPlayer(conn, joinGameRequest.Name)
 	api.sendIDAndSecret(conn)
-	api.sendBoardState(conn)
 	api.sendBoardStateToAll()
 }
 
@@ -100,12 +100,14 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 	if player == nil {
 		player, err = api.getInactivePlayerById(idSecretRequest.ID)
 	}
-	if err != nil {
+	if player == nil || err != nil {
 		api.respondWithError(conn, err)
+		return
 	}
 
 	if player.Secret != idSecretRequest.Secret {
 		api.respondWithError(conn, errors.New("Secret does not match ID"))
+		return
 	}
 
 	//  Null out old connection
@@ -127,13 +129,14 @@ func (api *API) claimSet(conn *connection, message []byte) {
 	if err != nil {
 		// TODO: distinguish between invalid move and error
 		api.respondWithError(conn, err)
-	} else {
-		api.sendBoardStateToAllWithActions(*action)
-		if api.game.GameOver() {
-			api.respondWithTypeToAll("GAME_OVER")
-			api.initGame()
-			api.sendBoardStateToAll()
-		}
+		return
+	}
+
+	api.sendBoardStateToAllWithActions(*action)
+	if api.game.GameOver() {
+		gameOverAction := setgame.Action{Type: "GAME_OVER", PlayerID: -1, CardIds: nil}
+		api.initGame()
+		api.sendBoardStateToAllWithActions(gameOverAction)
 	}
 }
 
@@ -184,22 +187,22 @@ func (api *API) respondWithTypeToAll(typeString string) {
 }
 
 func (api *API) sendBoardState(conn *connection) {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil, api.sequenceNum}
 	sendResponse(conn, response)
 }
 
 func (api *API) sendBoardStateWithActions(conn *connection, action *setgame.Action) {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), action}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), action, api.sequenceNum}
 	sendResponse(conn, response)
 }
 
 func (api *API) sendBoardStateToAll() {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), nil, api.sequenceNum}
 	api.sendResponseToAll(response)
 }
 
 func (api *API) sendBoardStateToAllWithActions(action setgame.Action) {
-	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), &action}
+	response := boardResponse{"SET_BOARD", api.game.GetBoardCards(), api.getPlayers(), &action, api.sequenceNum}
 	api.sendResponseToAll(response)
 }
 
@@ -212,6 +215,7 @@ func (api *API) getPlayers() []setgame.Player {
 }
 
 func sendResponse(conn *connection, response interface{}) {
+	api.sequenceNum++
 	stringResponse, _ := json.Marshal(response)
 	log.Println("Responding to one:", string(stringResponse))
 	conn.ws.WriteMessage(websocket.TextMessage, stringResponse)
@@ -237,10 +241,11 @@ type idSecretMessage struct {
 }
 
 type boardResponse struct {
-	MsgType   string           `json:"type"`
-	GameBoard []setgame.Card   `json:"board"`
-	Players   []setgame.Player `json:"players"`
-	Action    *setgame.Action  `json:"action"`
+	MsgType     string           `json:"type"`
+	GameBoard   []setgame.Card   `json:"board"`
+	Players     []setgame.Player `json:"players"`
+	Action      *setgame.Action  `json:"action"`
+	SequenceNum int              `json:"seq"`
 }
 
 type errorResponse struct {
