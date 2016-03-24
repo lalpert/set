@@ -54,7 +54,7 @@ func (api *API) getActivePlayerById(id int32) (*setgame.Player, *connection, err
 }
 
 func (api *API) getInactivePlayerById(id int32) (*setgame.Player, error) {
-	player, ok = api.inactivePlayers[id]
+	player, ok := api.inactivePlayers[id]
 	if !ok {
 		return nil, errors.New("No player found with given ID")
 	}
@@ -70,7 +70,7 @@ func (api *API) unregisterConnection(conn *connection) {
 	player, ok := api.playerMap[conn]
 	if ok {
 		delete(api.playerMap, conn)
-		api.inactivePlayers[player.id] = player
+		api.inactivePlayers[player.ID] = player
 	}
 }
 
@@ -105,7 +105,7 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 	}
 
 	if player.Secret != idSecretRequest.Secret {
-		return nil, nil, errors.New("Secret does not match ID")
+		api.respondWithError(conn, errors.New("Secret does not match ID"))
 	}
 
 	//  Null out old connection
