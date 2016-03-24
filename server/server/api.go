@@ -26,13 +26,13 @@ const (
 type API struct {
 	game            *setgame.Game
 	playerMap       map[*connection]*setgame.Player
-	inactivePlayers map[int]*setgame.Player // int is the player's uuid
+	inactivePlayers map[int32]*setgame.Player // int is the player's id
 }
 
 var api = API{
 	game:            nil,
 	playerMap:       make(map[*connection]*setgame.Player),
-	inactivePlayers: make(map[int]*setgame.Player), // int is the uuid
+	inactivePlayers: make(map[int32]*setgame.Player),
 }
 
 func (api *API) initGame() {
@@ -44,16 +44,21 @@ func (api *API) newPlayer(incomingConnection *connection, name string) {
 	api.playerMap[incomingConnection] = player
 }
 
-func (api *API) getPlayer(id int32, secret int32) (*setgame.Player, *connection, error) {
+func (api *API) getActivePlayerById(id int32) (*setgame.Player, *connection, error) {
 	for conn, player := range api.playerMap {
 		if player.ID == id {
-			if player.Secret != secret {
-				return nil, nil, errors.New("Secret does not match ID")
-			}
 			return player, conn, nil
 		}
 	}
 	return nil, nil, errors.New("No player found with given ID")
+}
+
+func (api *API) getInactivePlayerById(id int32) (*setgame.Player, error) {
+	player, ok := api.inactivePlayers[id]
+	if !ok {
+		return nil, errors.New("No player found with given ID")
+	}
+	return player, nil
 }
 
 type submitSetMessage struct {
@@ -61,7 +66,12 @@ type submitSetMessage struct {
 }
 
 func (api *API) unregisterConnection(conn *connection) {
-	// move player to list of inactive players
+	// If player leaves game, move them to list of inactive players
+	player, ok := api.playerMap[conn]
+	if ok {
+		delete(api.playerMap, conn)
+		api.inactivePlayers[player.ID] = player
+	}
 }
 
 func (api *API) joinGame(conn *connection, message []byte) {
@@ -84,12 +94,21 @@ func (api *API) rejoinGame(conn *connection, message []byte) {
 		api.respondWithError(conn, err)
 		return
 	}
-	player, oldConn, err := api.getPlayer(idSecretRequest.ID, idSecretRequest.Secret)
+	// First try to find player in active players
+	player, oldConn, err := api.getActivePlayerById(idSecretRequest.ID)
+	// If no player found/error, then try to find them in inactive players
+	if player == nil {
+		player, err = api.getInactivePlayerById(idSecretRequest.ID)
+	}
 	if err != nil {
 		api.respondWithError(conn, err)
-		return
 	}
-	// TODO null out old connection
+
+	if player.Secret != idSecretRequest.Secret {
+		api.respondWithError(conn, errors.New("Secret does not match ID"))
+	}
+
+	//  Null out old connection
 	delete(api.playerMap, oldConn)
 
 	// Add new connection
