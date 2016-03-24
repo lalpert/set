@@ -51,6 +51,10 @@ const reduce = (state, action) => {
       return Object.assign({}, state, {player: Object.assign({}, state.player, {id: action.id, secret: action.secret})});
 
     case "SET_BOARD":
+      if (action.seq <= state.seq) {
+        console.warn("Received out of sequence message");
+        return state;
+      }
       const filteredSelected = state.selected.filter(id => {
         return action.board.find(card => card.id == id) != undefined
       });
@@ -59,7 +63,8 @@ const reduce = (state, action) => {
         selected: filteredSelected,
         players: action.players,
         claimed: undefined,
-        invalid: undefined
+        invalid: undefined,
+        seq: action.seq
       });
 
     case "SET_NAME":
@@ -162,7 +167,7 @@ const Server = (store) => {
   const MaxReconnectDelay = 5000;
   const queue = [];
   const connect = () => {
-    const ws = new WebSocket(localhostAddress);
+    const ws = new WebSocket(prodServerAddress);
     ws.onopen = () => {
       store.dispatch({type: "ADD_WS", ws: ws});
       const player = store.getState().player;
