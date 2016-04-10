@@ -177,7 +177,7 @@ const store = createStore(reduce, applyMiddleware(thunk));
 store.dispatch({type: "INIT"});
 
 const localhostAddress = 'ws://localhost:8080/ws';
-const prodServerAddress = 'ws://45.55.20.132/ws';
+const prodServerAddress = 'ws://45.55.20.132:443/ws';
 const Server = (store) => {
   var reconnectDelay = 10;
   const MaxReconnectDelay = 5000;
