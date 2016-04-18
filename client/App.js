@@ -18,6 +18,9 @@ import thunk from 'redux-thunk';
 import SetContainer from './SetContainer'
 import IntroContainer from './IntroContainer'
 import Storage from './Storage'
+import RemoteServer from './RemoteServer'
+import LocalServer from './LocalServer'
+import ServerCanary from './ServerCanary'
 
 // EVENTS:
 // Incoming:
@@ -36,7 +39,7 @@ import Storage from './Storage'
 
 const defaultState = {board: [], selected: [], players: [], player: {name: ""}};
 const reduce = (state, action) => {
-  console.log("processing: ", action);
+  console.log("processing at reducer root: ", action);
   switch (action.type) {
     // SERVER ACTIONS
     case "INIT":
@@ -108,10 +111,9 @@ const reduce = (state, action) => {
       });
 
     case "GAME_OVER":
-      setTimeout(() => action.onComplete(), 1000);
+      // TODO: actually handle this action and call onComplete when the animation is over
+      action.onComplete();
       return state;
-    //return Object.assign({})
-
 
     // LOCAL ACTIONS
     case "CARD_SELECTED":
@@ -126,15 +128,19 @@ const reduce = (state, action) => {
     case "CLAIM_SET":
       return state;
 
+    case "CONNECTION_STATUS":
+      return Object.assign({}, state, {connected: action.connected});
+
     default:
       return state;
   }
 };
 
 const processAction = (dispatch, gameAction, onComplete) => {
+  console.log("processing action", gameAction, onComplete);
   if (gameAction) {
     const completable = Object.assign({}, gameAction, {onComplete}, {dispatch});
-    console.log("dispatching: ", completable);
+    console.log("dispatching action:: ", completable);
     dispatch(completable);
   } else {
     onComplete();
@@ -148,8 +154,11 @@ const handleSideEffects = (message) => {
 };
 
 const processMessage = (message) => {
+  console.log("Processing message: ", message);
   handleSideEffects(message);
+  console.log("handled side effects");
   const mainDispatch = dispatch => {
+    console.log("main dispatch")
     const messageWithoutAction = Object.assign({}, message, {action: undefined});
     messageWithoutAction.action = undefined;
     dispatch(messageWithoutAction);
@@ -157,6 +166,7 @@ const processMessage = (message) => {
 
   return dispatch => {
     const onComplete = () => mainDispatch(dispatch);
+    console.log("procing");
     processAction(dispatch, message.action, onComplete);
   }
 };
@@ -176,89 +186,46 @@ const store = createStore(reduce, applyMiddleware(thunk));
 
 store.dispatch({type: "INIT"});
 
-const localhostAddress = 'ws://localhost:8080/ws';
-const prodServerAddress = 'ws://45.55.20.132:443/ws';
-const Server = (store) => {
-  var reconnectDelay = 10;
-  const MaxReconnectDelay = 5000;
-  const queue = [];
-  const connect = () => {
-    const ws = new WebSocket(prodServerAddress);
-    ws.onopen = () => {
-      store.dispatch({type: "ADD_WS", ws: ws});
-      const player = store.getState().player;
-      console.log("name", player.name);
-      if (player.id) {
-        send({type: "REJOIN_GAME", id: player.id, secret: player.secret});
-      } else {
-        send({type: "JOIN_GAME", name: player.name});
-      }
-      const queueCopy = queue.slice();
-      queue.length = 0;
-      queueCopy.forEach(send);
-      reconnectDelay = 10;
-    };
+const localhostAddress = 'localhost:8080';
+const prodServerAddress = '45.55.20.132:443';
 
-    ws.onmessage = (msg) => {
-      const message = JSON.parse(msg.data);
-      console.log(msg.data);
-      if (!message.type) {
-        console.warn("No type defined! Msg:", msg.data);
-      } else if (message.type == "ERROR") {
-        store.dispatch({type: "CLEAR"});
-        Storage.clearConfig().then(() => {
-          loadFromStorage(store.dispatch)
-        }).then(() => connect());
-      } else {
-        store.dispatch(processMessage(message));
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.warn("connection error: ", err.message);
-      setTimeout(connect, reconnectDelay);
-      reconnectDelay *= 2;
-      reconnectDelay = Math.min(reconnectDelay, MaxReconnectDelay);
-    };
-
-    ws.onclose = (err) => {
-      console.warn("connection closed: ", err.code, err.reason);
-      setTimeout(connect, reconnectDelay);
-      reconnectDelay *= 2;
-      reconnectDelay = Math.min(reconnectDelay, MaxReconnectDelay);
-    }
-  };
-
-  const send = (msg) => {
-    try {
-      store.getState().ws.send(JSON.stringify(msg));
-      return true;
-    } catch (e) {
-      queue.push(msg);
-      return false;
-    }
-  };
-
-  return {send, connect};
-};
-
-
-const server = Server(store);
+const wsAddress = `ws://${localhostAddress}/ws`;
+const canaryAddress = `http://${localhostAddress}/status`;
 
 loadFromStorage(store.dispatch);
 
+const canary = ServerCanary(store.dispatch, canaryAddress);
+//canary.checkConnectivity();
+//setInterval(canary.checkConnectivity, 5000);
+
 export default React.createClass({
+  connectToRemoteServer(nav) {
+    const server = RemoteServer(wsAddress, store, loadFromStorage, processMessage);
+    setTimeout(server.connect, 0);
+    this.setState({server});
+    nav.push({id: 'multi'});
+  },
+
+  connectLocal(nav) {
+    const server = LocalServer(msg => store.dispatch(processMessage(msg)));
+    this.setState({server});
+    nav.push({id: 'single'});
+  },
+
   renderScene(route, nav) {
     if (route == undefined) {
       return <View><Text>Undefined</Text></View>
     }
     switch (route.id) {
       case 'intro':
-        return <IntroContainer gotoMultiplayerGlobal={() => { server.connect();
-          nav.push({id: 'multi'}) }
-        }/>;
+        return <IntroContainer
+          gotoMultiplayerGlobal={() => this.connectToRemoteServer(nav)}
+          gotoSinglePlayer={() => this.connectLocal(nav)}
+        />;
       case 'multi':
-        return <SetContainer server={server}/>;
+        return <SetContainer server={this.state.server}/>;
+      case 'single':
+        return <SetContainer server={this.state.server}/>;
       default:
         return <View><Text>Default</Text></View>;
     }

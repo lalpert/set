@@ -169,8 +169,13 @@ const SetCard = React.createClass({
   propTypes: {
     id: React.PropTypes.number.isRequired,
 
+    // diamond/squiggle/oval
     shape: React.PropTypes.string.isRequired,
+
+    // red,green,purple
     color: React.PropTypes.string.isRequired,
+
+    // solid,striped,empty
     fill: React.PropTypes.string.isRequired,
     number: React.PropTypes.number.isRequired,
 

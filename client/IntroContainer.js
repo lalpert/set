@@ -16,9 +16,9 @@ const IntroContainer = React.createClass({
     return <View>
       <Button style={{fontSize: 20}}
               containerStyle={styles.button}
-              disabled={!this.props.gotoMultiplayerGlobal}
+              disabled={!this.props.gotoMultiplayerGlobal || !this.props.connected}
               onPress={this.props.gotoMultiplayerGlobal}>
-        Multiplayer Public
+        {this.props.connected ? "Multiplayer Public" : "Multiplayer Public (No internet)" }
       </Button>
       <Button style={{fontSize: 20}}
               containerStyle={styles.button}
@@ -45,7 +45,6 @@ const IntroContainer = React.createClass({
 
   propTypes: {
     player: React.PropTypes.object,
-
     gotoMultiplayerGlobal: React.PropTypes.func,
     gotoMultiplayerNamedGame: React.PropTypes.func,
     gotoSinglePlayer: React.PropTypes.func,
