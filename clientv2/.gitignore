@@ -1,3 +1,7 @@
+# Vim
+*.swp
+*.swo
+*.swn
 # OSX
 #
 .DS_Store
