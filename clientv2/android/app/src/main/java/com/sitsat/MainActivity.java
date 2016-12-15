@@ -1,4 +1,4 @@
-package com.sit;
+package com.sitsat;
 
 import com.facebook.react.ReactActivity;
 

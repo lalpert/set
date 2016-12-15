@@ -1,4 +1,4 @@
-package com.sit;
+package com.sitsat;
 
 import android.app.Application;
 import android.util.Log;
