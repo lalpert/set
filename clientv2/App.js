@@ -148,7 +148,7 @@ const processAction = (dispatch, gameAction, onComplete) => {
 };
 
 const handleSideEffects = (message) => {
-  if (message.type == "JOIN_ACCEPTED") {
+  if (message.type == "JOIN_ACCEPTED" && message.id != "LOCAL") {
     Storage.setConfig(message.id, message.secret);
   }
 };
@@ -199,7 +199,8 @@ canary.checkConnectivity();
 setInterval(canary.checkConnectivity, 5000);
 
 export default React.createClass({
-  connectToRemoteServer(nav) {
+  async connectToRemoteServer(nav) {
+    await loadFromStorage(store.dispatch);
     const server = RemoteServer(wsAddress, store, loadFromStorage, processMessage);
     setTimeout(server.connect, 0);
     this.setState({server});
